@@ -1,0 +1,29 @@
+app = "ascendia-admin"
+primary_region = "hkg"
+
+[build]
+dockerfile = "Dockerfile"
+
+[env]
+NODE_ENV = "production"
+PORT = "8080"
+# Persist Prisma SQLite in the mounted volume:
+DATABASE_URL = "file:/data/dev.sqlite"
+# Public URL of your app (also add it in Shopify app settings)
+SHOPIFY_APP_URL = "https://ascendia-admin.fly.dev"
+
+[[mounts]]
+source = "data"
+destination = "/data"
+
+[http_service]
+internal_port = 8080
+force_https = true
+auto_stop_machines = true
+auto_start_machines = true
+min_machines_running = 1
+processes = ["app"]
+
+[deploy]
+# Run DB migrations on release
+release_command = "npx prisma migrate deploy"
