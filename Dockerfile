@@ -40,4 +40,5 @@ COPY --from=build /app/public ./public
 COPY --from=build /app/prisma ./prisma
 
 EXPOSE 8080
-CMD ["npm", "run", "start"]
+# start the server AND run migrations on boot
+CMD ["npm", "run", "docker-start"]
