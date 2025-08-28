@@ -7,8 +7,6 @@ dockerfile = "Dockerfile"
 [env]
 NODE_ENV = "production"
 PORT = "8080"
-# Persist Prisma SQLite in the mounted volume:
-DATABASE_URL = "file:/data/dev.sqlite"
 # Public URL of your app (also add it in Shopify app settings)
 SHOPIFY_APP_URL = "https://ascendia-admin.fly.dev"
 
