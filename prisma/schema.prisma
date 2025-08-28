@@ -10,24 +10,22 @@ datasource db {
 }
 
 model Session {
-  id          String    @id @map("id")
-  shop        String    @map("shop")
-  state       String    @map("state")
-  isOnline    Boolean   @map("is_online")
-  scope       String?   @map("scope")
-  expires     DateTime? @map("expires")
-  accessToken String?   @map("access_token")
-  userId      BigInt?   @map("user_id")
-
-  // These were already in your file; keep them as-is so they match your columns
+  id            String    @id @map("id")
+  shop          String    @map("shop")
+  state         String    @map("state")
+  isOnline      Boolean   @map("is_online")
+  scope         String?   @map("scope")
+  expires       DateTime? @map("expires")
+  accessToken   String?   @map("access_token")
+  userId        BigInt?   @map("user_id")
   firstName     String?
   lastName      String?
   email         String?
-  accountOwner  Boolean  @default(false)
+  accountOwner  Boolean   @default(false)
   locale        String?
-  collaborator  Boolean? @default(false)
-  emailVerified Boolean? @default(false)
+  collaborator  Boolean?  @default(false)
+  emailVerified Boolean?  @default(false)
 
-  // IMPORTANT: point to the existing capitalized table
-  @@map("Session")
+  // IMPORTANT: Shopify’s adapter uses a lower-case table
+  @@map("session")
 }
