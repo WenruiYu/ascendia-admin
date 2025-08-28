@@ -14,14 +14,14 @@ datasource db {
 }
 
 model Session {
-  id            String    @id
-  shop          String
-  state         String
-  isOnline      Boolean   @default(false)
-  scope         String?
-  expires       DateTime?
-  accessToken   String
-  userId        BigInt?
+  id            String    @id @map("id")
+  shop          String    @map("shop")
+  state         String    @map("state")
+  isOnline      Boolean   @map("is_online")
+  scope         String?   @map("scope")
+  expires       DateTime? @map("expires")
+  accessToken   String?   @map("access_token")
+  userId        BigInt?   @map("user_id")
   firstName     String?
   lastName      String?
   email         String?
@@ -29,4 +29,6 @@ model Session {
   locale        String?
   collaborator  Boolean?  @default(false)
   emailVerified Boolean?  @default(false)
+
+  @@map("session")
 }
