@@ -1,34 +1,33 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// prisma/schema.prisma
 
 generator client {
   provider = "prisma-client-js"
 }
 
-// Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
-// enough when changing adapters.
-// See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
 model Session {
-  id            String    @id @map("id")
-  shop          String    @map("shop")
-  state         String    @map("state")
-  isOnline      Boolean   @map("is_online")
-  scope         String?   @map("scope")
-  expires       DateTime? @map("expires")
-  accessToken   String?   @map("access_token")
-  userId        BigInt?   @map("user_id")
+  id          String    @id @map("id")
+  shop        String    @map("shop")
+  state       String    @map("state")
+  isOnline    Boolean   @map("is_online")
+  scope       String?   @map("scope")
+  expires     DateTime? @map("expires")
+  accessToken String?   @map("access_token")
+  userId      BigInt?   @map("user_id")
+
+  // These were already in your file; keep them as-is so they match your columns
   firstName     String?
   lastName      String?
   email         String?
-  accountOwner  Boolean   @default(false)
+  accountOwner  Boolean  @default(false)
   locale        String?
-  collaborator  Boolean?  @default(false)
-  emailVerified Boolean?  @default(false)
+  collaborator  Boolean? @default(false)
+  emailVerified Boolean? @default(false)
 
-  @@map("session")
+  // IMPORTANT: point to the existing capitalized table
+  @@map("Session")
 }
