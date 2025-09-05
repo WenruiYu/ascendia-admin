@@ -3,8 +3,10 @@ import { json } from "@remix-run/node";
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import {
   Page, Layout, Card, Button, BlockStack, Box, InlineStack,
-  TextField, Select, ChoiceList, Text, Banner
+  TextField, Select, ChoiceList, Text, Banner, Modal, Tag, Icon,
+  Autocomplete, ScrollArea, EmptySearchResult
 } from "@shopify/polaris";
+import { SearchIcon, XIcon } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { gqlAdmin } from "../utils/admin-gql.server";
@@ -45,6 +47,172 @@ function labelForDay(day_number, title) {
   const n = Number(day_number);
   const left = Number.isFinite(n) && n > 0 ? `Day ${n}` : "Day";
   return title ? `${left} — ${title}` : left;
+}
+
+// ---------- Attraction Selector Component ----------
+function AttractionSelector({ attractions, selected, onChange, dayIndex }) {
+  const [modalOpen, setModalOpen] = React.useState(false);
+  const [searchValue, setSearchValue] = React.useState("");
+  const [tempSelected, setTempSelected] = React.useState([]);
+
+  // Open modal and set temporary selection
+  const handleOpen = () => {
+    setTempSelected(selected || []);
+    setModalOpen(true);
+    setSearchValue("");
+  };
+
+  // Apply selection and close modal
+  const handleApply = () => {
+    onChange(tempSelected);
+    setModalOpen(false);
+  };
+
+  // Cancel and close modal
+  const handleCancel = () => {
+    setModalOpen(false);
+    setSearchValue("");
+  };
+
+  // Toggle attraction selection
+  const toggleAttraction = (attractionId) => {
+    setTempSelected(prev => {
+      if (prev.includes(attractionId)) {
+        return prev.filter(id => id !== attractionId);
+      } else {
+        return [...prev, attractionId];
+      }
+    });
+  };
+
+  // Remove attraction from selection (from tag)
+  const removeAttraction = (attractionId) => {
+    onChange((selected || []).filter(id => id !== attractionId));
+  };
+
+  // Filter attractions based on search
+  const filteredAttractions = React.useMemo(() => {
+    if (!searchValue) return attractions;
+    const search = searchValue.toLowerCase();
+    return attractions.filter(a => 
+      a.title.toLowerCase().includes(search) ||
+      (a.location && a.location.toLowerCase().includes(search))
+    );
+  }, [attractions, searchValue]);
+
+  // Get selected attraction objects
+  const selectedAttractions = React.useMemo(() => {
+    return attractions.filter(a => (selected || []).includes(a.id));
+  }, [attractions, selected]);
+
+  return (
+    <>
+      {/* Main display with tags */}
+      <Box>
+        <Text as="div" variant="headingSm" tone="subdued">
+          Attractions ({selectedAttractions.length} selected)
+        </Text>
+        <Box paddingBlockStart="100">
+          <InlineStack gap="100" wrap>
+            {selectedAttractions.map(a => (
+              <Tag key={a.id} onRemove={() => removeAttraction(a.id)}>
+                {a.title}
+              </Tag>
+            ))}
+            <Button size="slim" onClick={handleOpen} icon={SearchIcon}>
+              {selectedAttractions.length > 0 ? "Edit" : "Select"} Attractions
+            </Button>
+          </InlineStack>
+        </Box>
+      </Box>
+
+      {/* Selection Modal */}
+      <Modal
+        open={modalOpen}
+        onClose={handleCancel}
+        title={`Select Attractions for Day ${dayIndex + 1}`}
+        primaryAction={{
+          content: `Apply (${tempSelected.length} selected)`,
+          onAction: handleApply,
+        }}
+        secondaryActions={[
+          {
+            content: "Cancel",
+            onAction: handleCancel,
+          },
+        ]}
+      >
+        <Modal.Section>
+          <BlockStack gap="300">
+            {/* Search field */}
+            <TextField
+              label="Search attractions"
+              labelHidden
+              value={searchValue}
+              onChange={setSearchValue}
+              placeholder="Search by name or location..."
+              prefix={<Icon source={SearchIcon} />}
+              clearButton
+              onClearButtonClick={() => setSearchValue("")}
+              autoComplete="off"
+            />
+
+            {/* Results count */}
+            <Text as="p" variant="bodyMd" tone="subdued">
+              {filteredAttractions.length} attractions found
+              {searchValue && ` matching "${searchValue}"`}
+            </Text>
+
+            {/* Attraction list */}
+            <ScrollArea style={{ height: "400px" }}>
+              <BlockStack gap="100">
+                {filteredAttractions.length === 0 ? (
+                  <EmptySearchResult
+                    title="No attractions found"
+                    description="Try adjusting your search"
+                  />
+                ) : (
+                  filteredAttractions.map(attraction => {
+                    const isSelected = tempSelected.includes(attraction.id);
+                    return (
+                      <Box
+                        key={attraction.id}
+                        padding="200"
+                        borderWidth="025"
+                        borderColor={isSelected ? "success" : "border"}
+                        borderRadius="200"
+                        background={isSelected ? "bg-surface-success" : "bg-surface"}
+                      >
+                        <InlineStack align="space-between" blockAlign="center">
+                          <BlockStack gap="050">
+                            <Text as="span" variant="bodyMd" fontWeight={isSelected ? "semibold" : "regular"}>
+                              {attraction.title}
+                            </Text>
+                            {attraction.location && (
+                              <Text as="span" variant="bodySm" tone="subdued">
+                                📍 {attraction.location}
+                              </Text>
+                            )}
+                          </BlockStack>
+                          <Button
+                            size="slim"
+                            variant={isSelected ? "primary" : "secondary"}
+                            onClick={() => toggleAttraction(attraction.id)}
+                          >
+                            {isSelected ? "Selected" : "Select"}
+                          </Button>
+                        </InlineStack>
+                      </Box>
+                    );
+                  })
+                )}
+              </BlockStack>
+            </ScrollArea>
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
+    </>
+  );
 }
 
 // Parse a metaobject node -> plain day object
@@ -112,7 +280,11 @@ export const loader = async ({ request }) => {
   const aJson = await aRes.json();
   const attractions = (aJson?.data?.metaobjects?.nodes || []).map(n => {
     const m = fieldsToMap(n.fields);
-    return { id: n.id, title: m.title || n.handle };
+    return { 
+      id: n.id, 
+      title: m.title || n.handle,
+      location: m.location || "" // Include location for search/display
+    };
   });
 
   const hRes = await admin.graphql(Q_METAOBJECTS_BY_TYPE, { variables: { type: "hotel", first: 250 }});
@@ -439,14 +611,11 @@ export default function ItineraryBuilderPage() {
                             </div>
 
                             <div style={{ minWidth: 320 }}>
-                              <Text as="div" variant="headingSm" tone="subdued">Attractions</Text>
-                              <ChoiceList
-                                title="Attractions"
-                                titleHidden
-                                allowMultiple
-                                choices={attractions.map(a => ({ label: a.title, value: a.id }))}
+                              <AttractionSelector
+                                attractions={attractions}
                                 selected={d.attraction_ids || []}
                                 onChange={(vals)=>updateDay(idx, { attraction_ids: vals })}
+                                dayIndex={idx}
                               />
                             </div>
                           </InlineStack>
