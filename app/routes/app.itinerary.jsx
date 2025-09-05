@@ -3,10 +3,9 @@ import { json } from "@remix-run/node";
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import {
   Page, Layout, Card, Button, BlockStack, Box, InlineStack,
-  TextField, Select, ChoiceList, Text, Banner, Modal, Tag, Icon,
-  Autocomplete, ScrollArea, EmptySearchResult
+  TextField, Select, ChoiceList, Text, Banner, Modal, Tag, Icon
 } from "@shopify/polaris";
-import { SearchIcon, XIcon } from "@shopify/polaris-icons";
+import { SearchIcon } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { gqlAdmin } from "../utils/admin-gql.server";
@@ -164,13 +163,19 @@ function AttractionSelector({ attractions, selected, onChange, dayIndex }) {
             </Text>
 
             {/* Attraction list */}
-            <ScrollArea style={{ height: "400px" }}>
+            <div style={{ height: "400px", overflowY: "auto", border: "1px solid var(--p-color-border)", borderRadius: "var(--p-border-radius-200)", padding: "var(--p-space-200)" }}>
               <BlockStack gap="100">
                 {filteredAttractions.length === 0 ? (
-                  <EmptySearchResult
-                    title="No attractions found"
-                    description="Try adjusting your search"
-                  />
+                  <Box padding="400">
+                    <BlockStack gap="200">
+                      <Text as="p" variant="headingMd" alignment="center" tone="subdued">
+                        No attractions found
+                      </Text>
+                      <Text as="p" variant="bodyMd" alignment="center" tone="subdued">
+                        Try adjusting your search
+                      </Text>
+                    </BlockStack>
+                  </Box>
                 ) : (
                   filteredAttractions.map(attraction => {
                     const isSelected = tempSelected.includes(attraction.id);
@@ -207,7 +212,7 @@ function AttractionSelector({ attractions, selected, onChange, dayIndex }) {
                   })
                 )}
               </BlockStack>
-            </ScrollArea>
+            </div>
           </BlockStack>
         </Modal.Section>
       </Modal>
