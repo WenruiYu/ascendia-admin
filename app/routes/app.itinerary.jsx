@@ -183,18 +183,13 @@ export const action = async ({ request }) => {
         { key: F.ATTRACTIONS, value: JSON.stringify(Array.isArray(d.attraction_ids) ? d.attraction_ids : []) },
       ];
 
-      // --- Meals handling (supports both single-line and list.single_line_text) ---
+      // --- Meals handling (list.single_line_text_field always expects JSON array) ---
       const chosen = Array.isArray(d.meals) ? d.meals.filter(Boolean) : [];
-      if (chosen.length === 1) {
-        // Single value — compatible with single-line with limited choices
-        fields.push({ key: F.MEALS, value: chosen[0] });
-      } else if (chosen.length > 1) {
-        // Multiple values — requires the field be a List of values
+      // Always send as JSON array since the field type is list.single_line_text_field
+      if (chosen.length > 0) {
         fields.push({ key: F.MEALS, value: JSON.stringify(chosen) });
-      } else {
-        // No meals selected: omit the field so days can be blank
-        // (If your field is required in Admin, remove that requirement.)
       }
+      // If no meals selected, omit the field so days can be blank
 
       const up = await gqlAdmin(admin, M_METAOBJECT_UPSERT_GENERIC, {
         type: ITDAY_TYPE,
