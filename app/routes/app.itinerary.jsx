@@ -54,6 +54,22 @@ function parseFieldsToDay(node) {
   const dayNumber = parseInt(m[F.DAY_NUMBER] ?? "0", 10);
   if (!Number.isFinite(dayNumber) || dayNumber <= 0) return null;
 
+  // Parse description from rich text format if it's stored as JSON
+  let description = "";
+  const rawDescription = m[F.DESCRIPTION];
+  if (rawDescription) {
+    try {
+      const parsed = JSON.parse(rawDescription);
+      // Extract text from rich text structure
+      if (parsed?.children?.[0]?.children?.[0]?.value) {
+        description = parsed.children[0].children[0].value;
+      }
+    } catch {
+      // If parsing fails, treat as plain string (backward compatibility)
+      description = rawDescription;
+    }
+  }
+
   // meals may be stored as a single string OR as a JSON array (for list fields)
   let meals = [];
   const rawMeals = m[F.MEALS];
@@ -71,7 +87,7 @@ function parseFieldsToDay(node) {
     handle: node.handle,
     day_number: dayNumber,
     title: m[F.TITLE] || "",
-    description: m[F.DESCRIPTION] || "",
+    description,
     hotel: m[F.HOTEL] || "",
     meals,
     attraction_ids: parseJSON(m[F.ATTRACTIONS], []),
@@ -141,10 +157,27 @@ export const action = async ({ request }) => {
       const handle = `${ITDAY_TYPE}-${gidSuffix}-day-${String(dayNum).padStart(2,"0")}-${slugify(d.title || "")}`.slice(0, 60);
       const safeLabel = d.label || labelForDay(dayNum, d.title || "");
 
+      // Convert plain text to rich text format for the description field
+      const descriptionValue = d.description 
+        ? JSON.stringify({
+            type: "root",
+            children: [{
+              type: "paragraph",
+              children: [{
+                type: "text",
+                value: d.description
+              }]
+            }]
+          })
+        : JSON.stringify({
+            type: "root",
+            children: []
+          });
+
       const fields = [
         { key: F.DAY_NUMBER, value: String(dayNum) },
         { key: F.TITLE, value: d.title || "" },
-        { key: F.DESCRIPTION, value: d.description || "" },
+        { key: F.DESCRIPTION, value: descriptionValue },
         { key: F.LABEL, value: safeLabel },
         ...(d.hotel ? [{ key: F.HOTEL, value: d.hotel }] : []),
         { key: F.ATTRACTIONS, value: JSON.stringify(Array.isArray(d.attraction_ids) ? d.attraction_ids : []) },
