@@ -89,6 +89,7 @@ export const action = async ({ request }) => {
         type: "season_date",
         handle: moHandle,
         fields: [
+          { key: "label", value: `${row.date} - ${(row.season || "low").toLowerCase()} season` },
           { key: "date", value: row.date },
           { key: "season", value: (row.season || "low").toLowerCase() },
           ...(row.note ? [{ key: "note", value: row.note }] : []),
