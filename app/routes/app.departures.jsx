@@ -85,14 +85,21 @@ export const action = async ({ request }) => {
         .toLowerCase()
         .replace(/[^a-z0-9-]/g, "-");
 
+      // Auto-generate note if not provided
+      const season = (row.season || "low").toLowerCase();
+      const autoNote = season === "high" 
+        ? "High season rate applies to this departure date."
+        : "Standard rate applies to this departure date.";
+      const finalNote = row.note || autoNote;
+
       const up = await gqlAdmin(admin, M_METAOBJECT_UPSERT, {
         type: "season_date",
         handle: moHandle,
         fields: [
-          { key: "label", value: `${row.date} - ${(row.season || "low").toLowerCase()} season` },
+          { key: "label", value: `${row.date} - ${season} season` },
           { key: "date", value: row.date },
-          { key: "season", value: (row.season || "low").toLowerCase() },
-          ...(row.note ? [{ key: "note", value: row.note }] : []),
+          { key: "season", value: season },
+          { key: "note", value: finalNote },
         ],
       });
       gids.push(up.metaobjectUpsert.metaobject.id);
@@ -449,7 +456,8 @@ export default function DeparturesPage() {
                       labelHidden
                       value={adding.note}
                       onChange={(v) => setAdding(a => ({ ...a, note: v }))}
-                      placeholder="Optional note"
+                      placeholder="Leave empty for auto-generated pricing note"
+                      helpText="If empty, will auto-generate: 'Standard/High season rate applies to this departure date.'"
                     />
                   </InlineStack>
 
